@@ -3,7 +3,7 @@ services:
     build: .
     container_name: linkharbor
     ports:
-      - "3000:3333"
+      - "127.0.0.1:3333:3000"
     volumes:
       - ./storage:/data
     restart: unless-stopped
