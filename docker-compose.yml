@@ -1,0 +1,12 @@
+services:
+  linkharbor:
+    build: .
+    container_name: linkharbor
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/data
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - DATA_PATH=/data

@@ -1,20 +1,95 @@
-Build a **production-ready Next.js application** that works as a scalable file downloader service using **local filesystem storage inside Docker (VPS environment)**.
+# 🚀 LinkHarbor (Project Idea)
+
+**LinkHarbor** is a high-speed download accelerator that uses a VPS to fetch files quickly and deliver them to users, bypassing slow or throttled local network speeds.
 
 ---
 
-## 🧠 Core Idea
+## 🧠 Concept
 
-Users provide:
+In many regions, direct downloads from certain servers are extremely slow (minutes to hours).
+However, a VPS (with better bandwidth and routing) can download the same files in seconds.
 
-* A **single URL**, OR
-* A **.txt file with multiple URLs**
+**LinkHarbor solves this by acting as a middle layer:**
 
-System will:
+```
+User → LinkHarbor (VPS) → Target Server
+                 ↓
+           Fast Download
+                 ↓
+              User
+```
 
-* Download files to local disk (`/data` volume)
-* If single → return direct download link
-* If multiple → zip files → return ZIP download link
-* Auto-delete after **24 hours**
+---
+
+## ⚡ What It Does
+
+* Accepts:
+
+  * A **single file URL**
+  * OR a **.txt file with multiple URLs**
+
+* Then:
+
+  * Downloads files using VPS speed ⚡
+  * If single file → provides direct download link
+  * If multiple files → compresses into ZIP
+  * Returns a downloadable link to user
+
+---
+
+## 🧩 Key Features
+
+* 🚀 **Fast downloads via VPS**
+* 📦 **Auto ZIP for multiple files**
+* 🕒 **Temporary storage (24 hours)**
+* 🧹 **Auto cleanup after expiry**
+* 🔁 **Retry failed downloads**
+* ⚙️ **Concurrent download handling**
+
+---
+
+## 🏗️ How It Works
+
+### 1. Input
+
+* User submits:
+
+  * URL OR `.txt` file
+
+### 2. Processing
+
+* Generate unique `jobId`
+* Create folder:
+
+  ```
+  /data/{jobId}/
+  ```
+* Download files using streams
+
+### 3. Output
+
+* Single file → direct link
+* Multiple files → ZIP archive
+
+### 4. Delivery
+
+* Accessible via:
+
+  ```
+  /api/download/{jobId}
+  ```
+
+---
+
+## 🐳 Infrastructure
+
+* Runs inside Docker on a VPS
+* Uses mounted volume:
+
+  ```
+  /data
+  ```
+* Ensures persistence across restarts
 
 ---
 
@@ -22,137 +97,28 @@ System will:
 
 * Next.js (App Router)
 * TypeScript
-* Node.js runtime (NOT edge)
-* `fs/promises` + streams
-* `axios` or `undici`
-* `archiver` (for zip)
+* Node.js (server runtime)
+* `archiver` (ZIP)
+* `axios` / `undici`
 * `uuid`
-* `p-limit` (for concurrency control)
-* `node-cron` (cleanup)
+* `p-limit`
+* `node-cron`
 
 ---
 
-## 📁 Storage Design (IMPORTANT)
+## 🔒 Security
 
-Use a **Docker-mounted volume**:
-
-* All files stored in:
-
-  ```
-  /data/{jobId}/
-  ```
-
-Example:
-
-```
-/data/
-  ├── job-abc123/
-  │     ├── file1.mp4
-  │     ├── file2.mp4
-  │     └── output.zip
-```
-
-* Each job has:
-
-  * `meta.json` (timestamps, status)
-  * downloaded files
+* Only allow `http/https` URLs
+* Prevent SSRF (block internal IPs)
+* Limit file sizes
+* Add timeouts + retries
 
 ---
 
-## 🐳 Docker Requirements
+## 🧹 Cleanup System
 
-### Dockerfile
-
-* Use Node 20+
-* Enable filesystem writes
-* Set working dir `/app`
-
-### docker-compose.yml
-
-* Mount volume:
-
-  ```
-  volumes:
-    - ./data:/data
-  ```
-
----
-
-## 🧱 Architecture
-
-* `/app` → UI
-* `/app/api/upload/route.ts` → handles URL or txt input
-* `/app/api/download/[id]/route.ts` → serves file/zip
-* `/lib/downloader.ts` → streaming download logic
-* `/lib/zip.ts` → zip streaming
-* `/lib/storage.ts` → file paths + helpers
-* `/lib/cleanup.ts` → delete after 24h
-
----
-
-## 🚀 Functional Flow
-
-### 1. Upload/Input
-
-* Accept:
-
-  * URL string
-  * `.txt` file
-* Parse links
-* Generate `jobId` (UUID)
-
----
-
-### 2. Download Engine
-
-* Create folder:
-
-  ```
-  /data/{jobId}
-  ```
-* Download using streams:
-
-  * Do NOT buffer entire file
-* Limit concurrency:
-
-  * max 3–5 downloads at once
-
----
-
-### 3. Multi-file Handling
-
-* If multiple links:
-
-  * Download all
-  * Create:
-
-    ```
-    /data/{jobId}/output.zip
-    ```
-  * Use streaming zip (archiver)
-
----
-
-### 4. File Serving
-
-* Endpoint:
-
-  ```
-  /api/download/{jobId}
-  ```
-* Return:
-
-  * single file OR zip
-* Use proper headers:
-
-  * Content-Disposition: attachment
-
----
-
-### 5. Cleanup System (CRITICAL)
-
-* Run cron every hour:
-* Delete folders older than 24 hours:
+* Runs every hour
+* Deletes files older than 24 hours:
 
   ```
   Date.now() - createdAt > 24h
@@ -160,67 +126,37 @@ Example:
 
 ---
 
-## ⚡ Performance Considerations
+## 🎯 Use Case
 
-* Use streams everywhere
-* Avoid memory buffering
-* Handle large files (GBs)
-* Add timeout + retry logic
-* Handle failed downloads gracefully
+> Download large files faster by routing through a high-speed VPS instead of slow local networks.
 
 ---
 
-## 🔒 Security
+## 💡 Taglines
 
-* Validate URLs (ONLY http/https)
-* Prevent SSRF:
-
-  * Block localhost / private IP ranges
-* Limit max file size (configurable)
-* Rate limit requests
+* *Download at VPS speed.*
+* *Bypass slow networks instantly.*
+* *Your personal download accelerator.*
 
 ---
 
-## 🎨 UI (shadcn/ui)
+## 🔥 Future Ideas
 
-* Input field for URL
-* File upload (.txt)
-* Submit button
-* Status:
-
-  * Downloading
-  * Zipping
-  * Ready
-* Show download button when done
-
----
-
-## 🌐 Deployment Notes
-
-* Designed for VPS (NOT serverless)
-* Works with Docker
-* Persistent storage via volume
-* No external storage needed
-
----
-
-## 📦 Output Required
-
-* Full project code
-* Dockerfile
-* docker-compose.yml
-* README.md
-* .env.example
-
----
-
-## 🧩 Bonus (if possible)
-
-* Progress tracking (per file)
+* Progress tracking UI
 * Queue system
 * WebSocket updates
-* Resume downloads
+* Multi-user support
+* Authentication
+* S3 support (optional)
 
 ---
 
-Make the system modular, efficient, and capable of handling large files and multiple users.
+## 💯 Summary
+
+LinkHarbor is a simple but powerful tool that:
+
+* Saves time ⏱️
+* Improves download speeds 🚀
+* Uses existing VPS infrastructure efficiently 💻
+
+---
