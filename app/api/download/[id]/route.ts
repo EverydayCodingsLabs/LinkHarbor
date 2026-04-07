@@ -46,6 +46,8 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
       'Content-Type': metadata.isZip ? 'application/zip' : 'application/octet-stream',
       'Content-Disposition': `attachment; filename="${fileName}"`,
       'Content-Length': stats.size.toString(),
+      'Accept-Ranges': 'bytes',
+      'Cache-Control': 'no-cache, no-transform',
       'X-Accel-Buffering': 'no', // Disable Nginx proxy buffering
     },
   });
